@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 from environs import Env
+import dj_database_url
 
 env = Env()
 env.read_env()
@@ -89,8 +90,18 @@ AUTH_USER_MODEL = 'accounts.User'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': env.dj_db_url("DB_URL", default=f"mysql://{env.str('DB_USER', 'root')}:{env.str('DB_PASSWORD', '')}@{env.str('DB_HOST', 'localhost')}:{env.str('DB_PORT', '3306')}/{env.str('DB_NAME', 'glourious_art')}")
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('DB_NAME', 'default_db_name'),
+        'USER': os.getenv('DB_USER', 'default_user'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'default_password'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+    }
 }
+
+# Override with PostgreSQL for production
+DATABASES['default'] = dj_database_url.config(default=os.getenv('DATABASE_URL', ''), conn_max_age=600)
 
 
 # Password validation
