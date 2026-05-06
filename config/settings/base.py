@@ -20,7 +20,7 @@ sys.path.append(os.path.join(BASE_DIR, 'apps'))
 SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-change-me")
 DEBUG = env.bool("DEBUG", default=False)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["https://art-backend-z691.onrender.com", "http://localhost:8000", "http://127.0.0.1:8000"]
 
 
 # Application definition
