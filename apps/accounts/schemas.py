@@ -11,13 +11,25 @@ class OTPRequestData(Schema):
     session_id: str
     is_existing_user: bool
 
-class OTPVerifySchema(Schema):
-    phone: str
-    otp: str
-    name: Optional[str] = None
+class DeviceMetadataSchema(Schema):
+    install_id: str
+    platform: str
+    device_model: Optional[str] = None
+    os_version: Optional[str] = None
+    fcm_token: Optional[str] = None
+    app_version: Optional[str] = None
 
-class GoogleLoginSchema(Schema):
+class OTPVerifySchema(Schema):
     id_token: str
+    name: Optional[str] = None
+    device: DeviceMetadataSchema
+
+class FirebaseLoginSchema(Schema):
+    id_token: str
+    device: DeviceMetadataSchema
+
+class RefreshTokenSchema(Schema):
+    refresh_token: str
 
 class UserSchema(Schema):
     id: UUID
@@ -27,6 +39,7 @@ class UserSchema(Schema):
     avatar: Optional[str] = "assets/images/profile_avatar.png"
     role: str = "user"
     is_verified: bool = True
+    status: str
 
 class AuthResponseData(Schema):
     access_token: str

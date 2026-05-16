@@ -1,13 +1,20 @@
 from typing import Any, Optional
 from pydantic import BaseModel
 
+class ErrorDetail(BaseModel):
+    code: str
+    message: str
+
 class StandardResponse(BaseModel):
-    status: str
-    message: Optional[str] = None
+    success: bool
     data: Optional[Any] = None
+    error: Optional[ErrorDetail] = None
 
-def success_response(data: Any = None, message: str = "Success") -> StandardResponse:
-    return StandardResponse(status="success", message=message, data=data)
+def success_response(data: Any = None) -> StandardResponse:
+    return StandardResponse(success=True, data=data)
 
-def error_response(message: str = "Error", data: Any = None) -> StandardResponse:
-    return StandardResponse(status="error", message=message, data=data)
+def error_response(code: str, message: str) -> StandardResponse:
+    return StandardResponse(
+        success=False, 
+        error=ErrorDetail(code=code, message=message)
+    )

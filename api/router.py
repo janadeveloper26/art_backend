@@ -2,8 +2,13 @@ from ninja import NinjaAPI
 from api.v1.auth import router as auth_router
 from api.v1.users import router as users_router
 from api.v1.health import router as health_router
+# pyrefly: ignore [missing-import]
 from accounts.api import router as accounts_router
+# pyrefly: ignore [missing-import]
+from devices.api import router as devices_router
+# pyrefly: ignore [missing-import]
 from courses.api import router as courses_router
+# pyrefly: ignore [missing-import]
 from payments.api import router as payments_router
 from core.exceptions import APIError
 import logging
@@ -14,6 +19,7 @@ api = NinjaAPI(
     title="ART API",
     version="1.0.0",
     description="Art Learning Platform API",
+    urls_namespace="api-v1",
 )
 
 @api.exception_handler(APIError)
@@ -21,7 +27,7 @@ def api_error_handler(request, exc):
     logger.error(f"API Error: {exc.message} (Status: {exc.status_code})")
     return api.create_response(
         request,
-        {"status": "error", "message": exc.message},
+        {"success": False, "error": {"code": f"ERR_{exc.status_code}", "message": exc.message}},
         status=exc.status_code,
     )
 
@@ -30,11 +36,12 @@ def global_exception_handler(request, exc):
     logger.exception("Unhandled Exception")
     return api.create_response(
         request,
-        {"status": "error", "message": "An internal server error occurred"},
+        {"success": False, "error": {"code": "ERR_500", "message": "An internal server error occurred"}},
         status=500,
     )
 
 api.add_router("/auth", accounts_router, tags=["Authentication"])
+api.add_router("/admin/devices", devices_router, tags=["Admin Devices"])
 api.add_router("/courses", courses_router, tags=["Courses"])
 api.add_router("/payments", payments_router, tags=["Payments"])
 api.add_router("/users", users_router, tags=["Users"])

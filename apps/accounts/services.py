@@ -1,90 +1,191 @@
-import jwt
+import hashlib
 import datetime
+import uuid
+import jwt
+import structlog
 from django.conf import settings
 from django.db import transaction
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
+from django.core.cache import cache
+from django.utils import timezone
 from .models import User, AuthIdentity, AuthProvider
+from .firebase_service import FirebaseService
+from devices.models import UserDevice, DeviceStatus
+from user_sessions.models import Session
+from audit.models import AuditLog
 from core.exceptions import APIError
+
+logger = structlog.get_logger("art_backend")
 
 class AuthService:
     @staticmethod
-    def generate_tokens(user):
+    def _hash_token(token: str) -> str:
+        return hashlib.sha256(token.encode()).hexdigest()
+
+    @staticmethod
+    def generate_tokens(user, device, ip=None, user_agent=None):
+        if not user.is_active:
+            raise APIError(403, f"Account is in {user.status} state. Please contact administrator.")
+        
+        if device.status != DeviceStatus.APPROVED:
+            logger.warning("login_denied_device_pending", user_id=str(user.id), device_id=str(device.id))
+            raise APIError(403, "Device pending admin approval. Please contact administrator.")
+        
         access_payload = {
             'user_id': str(user.id),
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
+            'device_id': str(device.id),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=15),
             'iat': datetime.datetime.utcnow(),
             'type': 'access'
         }
+        
+        refresh_jti = str(uuid.uuid4())
         refresh_payload = {
             'user_id': str(user.id),
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7),
+            'device_id': str(device.id),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30),
             'iat': datetime.datetime.utcnow(),
-            'type': 'refresh'
+            'type': 'refresh',
+            'jti': refresh_jti
         }
         
         access_token = jwt.encode(access_payload, settings.SECRET_KEY, algorithm='HS256')
         refresh_token = jwt.encode(refresh_payload, settings.SECRET_KEY, algorithm='HS256')
         
+        # Save session
+        Session.objects.create(
+            user=user,
+            device=device,
+            refresh_token_hash=AuthService._hash_token(refresh_token),
+            expires_at=timezone.now() + datetime.timedelta(days=30),
+            ip_address=ip,
+            user_agent=user_agent
+        )
+        
+        # Log Audit
+        AuditLog.objects.create(
+            user=user,
+            device=device,
+            event="LOGIN_SUCCESS",
+            ip_address=ip,
+            user_agent=user_agent
+        )
+        
+        logger.info("login_success", user_id=str(user.id), device_id=str(device.id), ip=ip)
+        
         return access_token, refresh_token
 
     @staticmethod
-    def check_user_exists(phone):
-        return User.objects.filter(phone=phone).exists()
-
-    @staticmethod
-    def verify_otp(phone, otp, name=None):
-        if otp != "123456":
-            raise APIError(400, "Invalid OTP")
+    def firebase_login(id_token, device_data, ip=None, user_agent=None):
+        decoded_token = FirebaseService.verify_token(id_token)
         
+        uid = decoded_token.get('uid')
+        email = decoded_token.get('email')
+        phone = decoded_token.get('phone_number')
+        name = decoded_token.get('name', 'User')
+        
+        # Determine provider
+        firebase_provider = decoded_token.get('firebase', {}).get('sign_in_provider')
+        provider = AuthProvider.GOOGLE if firebase_provider == 'google.com' else AuthProvider.OTP
+
         with transaction.atomic():
-            user = User.objects.filter(phone=phone).first()
+            # Identity Resolution Strategy:
+            # 1. Existing provider UID
+            identity = AuthIdentity.objects.filter(provider_uid=uid).first()
+            user = identity.user if identity else None
+
+            # 2. Verified phone number
+            if not user and phone:
+                user = User.objects.filter(phone=phone).first()
+            
+            # 3. Verified email address
+            if not user and email:
+                user = User.objects.filter(email=email).first()
+
             is_new_user = False
             if not user:
                 is_new_user = True
-                user = User.objects.create(phone=phone, name=name or "New User")
+                user = User.objects.create(
+                    email=email,
+                    phone=phone,
+                    name=name
+                )
             
-            identity, created = AuthIdentity.objects.get_or_create(
-                provider=AuthProvider.OTP,
-                provider_uid=phone,
-                defaults={'user': user, 'verified': True}
+            # Link the Firebase UID if not already linked
+            if not identity:
+                AuthIdentity.objects.create(
+                    user=user,
+                    provider=provider,
+                    provider_uid=uid,
+                    verified=True
+                )
+            
+            # Device Verification
+            device, created = UserDevice.objects.get_or_create(
+                install_id=device_data['install_id'],
+                defaults={
+                    'user': user,
+                    'platform': device_data['platform'],
+                    'device_model': device_data.get('device_model'),
+                    'os_version': device_data.get('os_version'),
+                    'fcm_token': device_data.get('fcm_token'),
+                    'app_version': device_data.get('app_version'),
+                }
             )
             
             if not created:
-                identity.verified = True
-                identity.save()
+                # Update metadata
+                device.fcm_token = device_data.get('fcm_token', device.fcm_token)
+                device.app_version = device_data.get('app_version', device.app_version)
+                device.last_login_at = timezone.now()
+                device.save()
             
-            return user, is_new_user
+            return user, device, is_new_user
 
     @staticmethod
-    def google_login(token_id):
+    def refresh_access_token(refresh_token, ip=None, user_agent=None):
         try:
-            idinfo = id_token.verify_oauth2_token(token_id, google_requests.Request())
+            payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=['HS256'])
+            if payload.get('type') != 'refresh':
+                raise APIError(401, "Invalid refresh token")
             
-            email = idinfo['email']
-            google_uid = idinfo['sub']
-            name = idinfo.get('name', '')
+            token_hash = AuthService._hash_token(refresh_token)
+            session = Session.objects.filter(
+                refresh_token_hash=token_hash, 
+                revoked_at__isnull=True,
+                expires_at__gt=timezone.now()
+            ).first()
+            
+            if not session:
+                raise APIError(401, "Refresh token has been revoked or expired")
+            
+            user = session.user
+            device = session.device
+            
+            if not user.is_active:
+                raise APIError(403, "User account is disabled")
+            
+            # Revoke old session (Rotation)
+            session.revoked_at = timezone.now()
+            session.save()
+            
+            # Log Audit
+            AuditLog.objects.create(
+                user=user,
+                device=device,
+                event="TOKEN_REFRESH",
+                ip_address=ip,
+                user_agent=user_agent
+            )
+            
+            logger.info("token_refresh_success", user_id=str(user.id), device_id=str(device.id))
+            
+            return AuthService.generate_tokens(user, device, ip, user_agent)
+        except jwt.ExpiredSignatureError:
+            raise APIError(401, "Refresh token expired")
+        except Exception as e:
+            raise APIError(401, f"Invalid refresh token: {str(e)}")
 
-            with transaction.atomic():
-                user = User.objects.filter(email=email).first()
-                is_new_user = False
-                
-                if not user:
-                    is_new_user = True
-                    identity = AuthIdentity.objects.filter(provider=AuthProvider.GOOGLE, provider_uid=google_uid).first()
-                    if identity:
-                        user = identity.user
-                        is_new_user = False
-                    else:
-                        user = User.objects.create(email=email, name=name)
-                
-                AuthIdentity.objects.get_or_create(
-                    provider=AuthProvider.GOOGLE,
-                    provider_uid=google_uid,
-                    defaults={'user': user, 'verified': True}
-                )
-                
-                return user, is_new_user
-
-        except ValueError:
-            raise APIError(400, "Invalid Google Token")
+    @staticmethod
+    def logout(refresh_token):
+        token_hash = AuthService._hash_token(refresh_token)
+        Session.objects.filter(refresh_token_hash=token_hash).update(revoked_at=timezone.now())

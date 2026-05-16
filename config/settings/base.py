@@ -4,9 +4,11 @@ from pathlib import Path
 from environs import Env
 import dj_database_url
 
+from dotenv import load_dotenv
+
+load_dotenv()
 env = Env()
 env.read_env()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # BASE_DIR is backend/
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -18,10 +20,16 @@ sys.path.append(os.path.join(BASE_DIR, 'apps'))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-change-me")
-DEBUG = env.bool("DEBUG", default=False)
+SECRET_KEY = os.getenv("SECRET_KEY", default="django-insecure-change-me")
+DEBUG = os.getenv("DEBUG", default=False)
 
-ALLOWED_HOSTS = ["https://art-backend-z691.onrender.com", "http://localhost:8000", "http://127.0.0.1:8000"]
+ALLOWED_HOSTS = [
+    "art-backend-z691.onrender.com",
+    "localhost",
+    "127.0.0.1",
+    "192.168.29.72",  # Added to allow local network connections
+    "0.0.0.0",
+]
 
 
 # Application definition
@@ -39,6 +47,7 @@ THIRD_PARTY_APPS = [
     'ninja',
     'corsheaders',
     'rest_framework',
+    'django_prometheus',
 ]
 
 LOCAL_APPS = [
@@ -48,12 +57,17 @@ LOCAL_APPS = [
     'courses',
     'payments',
     'analytics',
+    'devices',
+    'user_sessions',
+    'audit',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -61,6 +75,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -91,17 +106,17 @@ AUTH_USER_MODEL = 'accounts.User'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'default_db_name'),
-        'USER': os.getenv('DB_USER', 'default_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'default_password'),
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.mysql'),
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER','root'),
+        'PASSWORD': os.getenv('DB_PASSWORD','2001'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '3306'),
     }
 }
 
 # Override with PostgreSQL for production
-DATABASES['default'] = dj_database_url.config(default=os.getenv('DATABASE_URL', ''), conn_max_age=600)
+# DATABASES['default'] = dj_database_url.config(default=os.getenv('DATABASE_URL', ''), conn_max_age=600)
 
 
 # Password validation
@@ -141,6 +156,24 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Extra places for collectstatic to find static files.
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# WhiteNoise configuration
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_KEEP_ONLY_HASHED_FILES = True
+
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -160,3 +193,28 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
     'idempotency-key',
 ]
+
+# Redis Cache for Rate Limiting and Token Blacklisting
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+# Firebase Configuration
+FIREBASE_SERVICE_ACCOUNT_PATH = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
+
+from core.logging import configure_logging
+configure_logging(os.getenv('DJANGO_LOG_LEVEL', 'INFO'))
+
+# Celery Configuration
+CELERY_BROKER_URL = os.getenv('RABBITMQ_URL', 'amqp://guest:guest@localhost:5672//')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE

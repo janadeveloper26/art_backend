@@ -8,6 +8,13 @@ class SkillLevel(models.TextChoices):
     INTERMEDIATE = 'INTERMEDIATE', 'Intermediate'
     ADVANCED = 'ADVANCED', 'Advanced'
 
+class UserStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    ACTIVE = 'ACTIVE', 'Active'
+    BLOCKED = 'BLOCKED', 'Blocked'
+    SUSPENDED = 'SUSPENDED', 'Suspended'
+    DELETED = 'DELETED', 'Deleted'
+
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
@@ -18,9 +25,25 @@ class User(AbstractBaseUser, PermissionsMixin):
         choices=SkillLevel.choices, 
         default=SkillLevel.BEGINNER
     )
-    is_active = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=20, 
+        choices=UserStatus.choices, 
+        default=UserStatus.PENDING
+    )
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def is_active(self):
+        return self.status == UserStatus.ACTIVE
+
+    @is_active.setter
+    def is_active(self, value):
+        if value:
+            self.status = UserStatus.ACTIVE
+        else:
+            if self.status == UserStatus.ACTIVE:
+                self.status = UserStatus.SUSPENDED
 
     objects = UserManager()
 
