@@ -1,73 +1,71 @@
-import uuid
+from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
-from .managers import UserManager
 
-class SkillLevel(models.TextChoices):
-    BEGINNER = 'BEGINNER', 'Beginner'
-    INTERMEDIATE = 'INTERMEDIATE', 'Intermediate'
-    ADVANCED = 'ADVANCED', 'Advanced'
 
-class UserStatus(models.TextChoices):
-    PENDING = 'PENDING', 'Pending'
-    ACTIVE = 'ACTIVE', 'Active'
-    BLOCKED = 'BLOCKED', 'Blocked'
-    SUSPENDED = 'SUSPENDED', 'Suspended'
-    DELETED = 'DELETED', 'Deleted'
-
-class User(AbstractBaseUser, PermissionsMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True, null=True, blank=True)
-    phone = models.CharField(max_length=15, unique=True, null=True, blank=True)
-    skill_level = models.CharField(
-        max_length=20, 
-        choices=SkillLevel.choices, 
-        default=SkillLevel.BEGINNER
+class User(AbstractUser):
+    firebase_uid = models.CharField(
+        max_length=255,
+        unique=True,
+        db_index=True,
     )
-    status = models.CharField(
-        max_length=20, 
-        choices=UserStatus.choices, 
-        default=UserStatus.PENDING
+
+    phone_number = models.CharField(
+        max_length=20,
+        blank=True,
     )
-    is_staff = models.BooleanField(default=False)
+
+    is_approved = models.BooleanField(default=False)
+
+    approved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
-    @property
-    def is_active(self):
-        return self.status == UserStatus.ACTIVE
+    updated_at = models.DateTimeField(auto_now=True)
 
-    @is_active.setter
-    def is_active(self, value):
-        if value:
-            self.status = UserStatus.ACTIVE
-        else:
-            if self.status == UserStatus.ACTIVE:
-                self.status = UserStatus.SUSPENDED
-
-    objects = UserManager()
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['name']
-
-    class Meta:
-        db_table = 'users'
-    
     def __str__(self):
-        return self.email if self.email else str(self.id)
+        return self.email or self.username
 
-class AuthProvider(models.TextChoices):
-    GOOGLE = 'GOOGLE', 'Google'
-    OTP = 'OTP', 'OTP'
 
-class AuthIdentity(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='identities')
-    provider = models.CharField(max_length=20, choices=AuthProvider.choices)
-    provider_uid = models.CharField(max_length=255) # For google: sub, for OTP: phone
-    verified = models.BooleanField(default=False)
+class DeviceSession(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='devices',
+    )
+
+    device_id = models.CharField(max_length=255)
+
+    device_name = models.CharField(max_length=255)
+
+    manufacturer = models.CharField(max_length=255)
+
+    brand = models.CharField(max_length=255)
+
+    android_version = models.CharField(max_length=50)
+
+    platform = models.CharField(max_length=20)
+
+    fcm_token = models.TextField()
+
+    is_approved = models.BooleanField(default=False)
+
+    approved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    last_login = models.DateTimeField(auto_now=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
-        db_table = 'auth_identities'
-        unique_together = ('provider', 'provider_uid')
+        unique_together = ('user', 'device_id')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.user} - {self.device_name}'

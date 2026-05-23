@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
-class UserSessionsConfig(AppConfig):
+
+class AccountsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'user_sessions'
-    label = 'user_sessions'
+    name = 'apps.accounts'
+    label = 'accounts'
