@@ -29,6 +29,8 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "192.168.29.72",  # Added to allow local network connections
     "0.0.0.0",
+    "3.110.120.103",
+    "api.gloriousartcreations.com"
 ]
 
 
