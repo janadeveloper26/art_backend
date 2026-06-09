@@ -29,3 +29,15 @@ secrets/
 .vscode/
 .idea/
 .DS_Store
+
+
+cert_and_key.pem
+localhost_combined.crt
+localhost_combined.key
+localhost_combined.pem
+localhost.pem
+localhost_key.pem
+
+temp_check_db.py
+scripts/run_https_dev.py
+scripts/test_auth.py

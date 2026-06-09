@@ -1,29 +1,28 @@
-import jwt
-from django.conf import settings
 from ninja.security import HttpBearer
-# pyrefly: ignore [missing-import]
-from accounts.models import User
+from ninja.errors import HttpError
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+
 
 class AuthBearer(HttpBearer):
-    def authenticate(self, request, token):
+    """
+    JWT Bearer auth using djangorestframework-simplejwt.
+    Validates the access token issued by /auth/otp/verify and /auth/firebase/login.
+    Raises 401 for missing/invalid/expired tokens.
+    """
+
+    def authenticate(self, request, token: str):
+        jwt_auth = JWTAuthentication()
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-            if payload.get('type') != 'access':
-                return None
-            
-            user_id = payload.get("user_id")
-            device_id = payload.get("device_id")
-            
-            if user_id:
-                user = User.objects.get(id=user_id)
-                if not user.is_active:
-                    return None
-                
-                # Attach metadata for logging/middleware
-                request.user_id = user_id
-                request.device_id = device_id
-                
-                return user
-        except (jwt.PyJWTError, User.DoesNotExist):
-            return None
-        return None
+            validated_token = jwt_auth.get_validated_token(token)
+            user = jwt_auth.get_user(validated_token)
+        except (InvalidToken, TokenError):
+            raise HttpError(401, "Invalid or expired token.")
+
+        if not user.is_active:
+            raise HttpError(401, "User account is inactive.")
+
+        if not user.is_approved:
+            raise HttpError(403, "Account is not yet approved.")
+
+        return user

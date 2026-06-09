@@ -1,8 +1,8 @@
 from django.apps import AppConfig
 
 
-class AuditConfig(AppConfig):
+class CoursesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.audit'
-    label = 'audit'
+    name = 'apps.courses'
+    label = 'courses'
 

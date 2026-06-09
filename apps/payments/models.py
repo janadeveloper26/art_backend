@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
-from accounts.models import User
-from courses.models import Course
+from apps.accounts.models import User
+from apps.courses.models import Course
 
 class PaymentStatus(models.TextChoices):
     PENDING = 'PENDING', 'Pending'

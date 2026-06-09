@@ -1,6 +1,8 @@
 from django.apps import AppConfig
 
-class UserSessionsConfig(AppConfig):
+
+class PaymentsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'user_sessions'
-    label = 'user_sessions'
+    name = 'apps.payments'
+    label = 'payments'
+

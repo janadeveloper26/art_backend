@@ -1,22 +1,46 @@
 from django.contrib import admin
-from .models import User, AuthIdentity
+
+from .models import DeviceSession
+from .models import User
+
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('email', 'phone', 'name', 'skill_level', 'status', 'is_staff', 'created_at')
-    search_fields = ('email', 'phone', 'name')
-    list_filter = ('skill_level', 'status', 'is_staff')
-    actions = ['activate_users', 'block_users']
+    list_display = (
+        'id',
+        'email',
+        'phone_number',
+        'is_approved',
+        'created_at',
+    )
 
-    def activate_users(self, request, queryset):
-        queryset.update(status='ACTIVE')
-    activate_users.short_description = "Activate selected users"
+    search_fields = (
+        'email',
+        'phone_number',
+    )
 
-    def block_users(self, request, queryset):
-        queryset.update(status='BLOCKED')
-    block_users.short_description = "Block selected users"
+    list_filter = (
+        'is_approved',
+    )
 
-@admin.register(AuthIdentity)
-class AuthIdentityAdmin(admin.ModelAdmin):
-    list_display = ('user', 'provider', 'provider_uid', 'verified', 'created_at')
-    list_filter = ('provider', 'verified')
+
+@admin.register(DeviceSession)
+class DeviceSessionAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'user',
+        'device_name',
+        'platform',
+        'is_approved',
+        'created_at',
+    )
+
+    search_fields = (
+        'device_name',
+        'brand',
+    )
+
+    list_filter = (
+        'is_approved',
+        'platform',
+    )
