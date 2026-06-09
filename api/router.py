@@ -20,6 +20,7 @@ api = NinjaAPI(
     version="1.0.0",
     description="Art Learning Platform API",
     urls_namespace="api-v1",
+    docs_url='/docs'
 )
 
 @api.exception_handler(APIError)
