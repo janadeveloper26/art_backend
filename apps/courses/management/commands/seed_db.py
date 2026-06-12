@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
-from accounts.models import User
-from courses.models import Category, Banner, Course, Section, Lesson
-from payments.models import SubscriptionPlan, PlanFeature
+from apps.accounts.models import User
+from apps.courses.models import Category, Banner, Course, Section, Lesson
+from apps.payments.models import SubscriptionPlan, PlanFeature
 
 class Command(BaseCommand):
     help = 'Seeds the database with initial mock data'
@@ -46,11 +46,11 @@ class Command(BaseCommand):
         # 3. Instructors (Users)
         priya, _ = User.objects.get_or_create(
             email="priya@example.com",
-            defaults={"name": "Priya Sharma", "is_active": True}
+            defaults={"username": "priya", "first_name": "Priya", "last_name": "Sharma", "is_active": True}
         )
         elena, _ = User.objects.get_or_create(
             email="elena@example.com",
-            defaults={"name": "Elena Rose", "is_active": True}
+            defaults={"username": "elena", "first_name": "Elena", "last_name": "Rose", "is_active": True}
         )
         self.stdout.write("Instructors created.")
 
@@ -112,6 +112,97 @@ class Command(BaseCommand):
             }
         )
         self.stdout.write("Lessons created.")
+
+        # React & Django Mock Courses
+        cat_dev, _ = Category.objects.get_or_create(name="Development", defaults={'order': 10})
+        cat_backend, _ = Category.objects.get_or_create(name="Backend", defaults={'order': 11})
+
+        john, _ = User.objects.get_or_create(
+            email="john@example.com",
+            defaults={"username": "john", "first_name": "John", "last_name": "Doe", "is_active": True}
+        )
+        jane, _ = User.objects.get_or_create(
+            email="jane@example.com",
+            defaults={"username": "jane", "first_name": "Jane", "last_name": "Smith", "is_active": True}
+        )
+
+        course3, _ = Course.objects.get_or_create(
+            title="React Complete Guide",
+            defaults={
+                "description": "Master React from basics to advanced patterns. Build real-world applications.",
+                "instructor": john,
+                "instructor_role": "Senior Software Engineer",
+                "category": cat_dev,
+                "price": 49.99,
+                "original_price": 49.99,
+                "level": "INTERMEDIATE",
+                "students_count": 1205,
+                "duration_str": "12h 30m",
+                "is_published": True,
+                "is_featured": True
+            }
+        )
+
+        section2, _ = Section.objects.get_or_create(
+            course=course3,
+            title="Module 1: Introduction",
+            defaults={"order": 1}
+        )
+        Lesson.objects.get_or_create(
+            section=section2,
+            title="What is React?",
+            defaults={
+                "video_url": "dummy.mp4",
+                "duration_str": "10:05",
+                "order": 1,
+                "is_preview": True
+            }
+        )
+        Lesson.objects.get_or_create(
+            section=section2,
+            title="Setup Environment",
+            defaults={
+                "video_url": "dummy.mp4",
+                "duration_str": "15:20",
+                "order": 2,
+                "is_preview": True
+            }
+        )
+
+        section3, _ = Section.objects.get_or_create(
+            course=course3,
+            title="Module 2: Hooks",
+            defaults={"order": 2}
+        )
+        Lesson.objects.get_or_create(
+            section=section3,
+            title="useState and useEffect",
+            defaults={
+                "video_url": "dummy.mp4",
+                "duration_str": "20:00",
+                "order": 1,
+                "is_preview": False
+            }
+        )
+
+        course4, _ = Course.objects.get_or_create(
+            title="Advanced Django Architecture",
+            defaults={
+                "description": "Learn how to build scalable Django applications.",
+                "instructor": jane,
+                "instructor_role": "Lead Backend Developer",
+                "category": cat_backend,
+                "price": 69.99,
+                "original_price": 69.99,
+                "level": "ADVANCED",
+                "students_count": 0,
+                "duration_str": "8h 15m",
+                "is_published": False,
+                "is_featured": False
+            }
+        )
+        
+        self.stdout.write("Mock React and Django courses created.")
 
         # 6. Subscription Plans
         plan1, _ = SubscriptionPlan.objects.get_or_create(

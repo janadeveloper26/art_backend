@@ -17,6 +17,11 @@ from .schemas import (
     LessonCreateIn,
     LessonOut,
     PresignedURLOut,
+    CategoryCreateIn,
+    CourseCreateIn,
+    CoursePricingUpdateIn,
+    SectionCreateIn,
+    LessonCreateDirectIn,
 )
 
 import uuid
@@ -138,6 +143,74 @@ def create_lesson(request, payload: LessonCreateIn):
 
 
 # ---------------------------------------------------------------------------
+# Admin / Creation Endpoints
+# ---------------------------------------------------------------------------
+
+@router.get('/categories', response={200: StandardResponse}, auth=AuthBearer())
+def get_categories(request):
+    categories = [{'id': str(c.id), 'name': c.name, 'order': c.order} for c in Category.objects.order_by('order')]
+    return success_response(data={'categories': categories}, message='Categories fetched successfully.')
+
+@router.post('/categories', response={200: StandardResponse}, auth=AuthBearer())
+def create_category(request, payload: CategoryCreateIn):
+    user = request.auth
+    cat = Category.objects.create(name=payload.name, order=payload.order)
+    return success_response(data={'id': str(cat.id), 'name': cat.name, 'order': cat.order}, message='Category created successfully.')
+
+@router.post('/', response={200: StandardResponse}, auth=AuthBearer())
+def create_course(request, payload: CourseCreateIn):
+    user = request.auth
+    category = get_object_or_404(Category, id=payload.category_id)
+    course = Course.objects.create(
+        title=payload.title,
+        description=payload.description,
+        category=category,
+        instructor=user,
+        instructor_role=payload.instructor_role,
+        price=payload.price,
+        level=payload.level,
+        duration_str=payload.duration_str
+    )
+    return success_response(data={'id': str(course.id), 'title': course.title}, message='Course created successfully.')
+
+@router.post('/{course_id}/sections', response={200: StandardResponse}, auth=AuthBearer())
+def create_section(request, course_id: str, payload: SectionCreateIn):
+    user = request.auth
+    course = get_object_or_404(Course, id=course_id)
+    section = Section.objects.create(
+        course=course,
+        title=payload.title,
+        order=payload.order
+    )
+    return success_response(data={'id': str(section.id), 'title': section.title, 'order': section.order}, message='Section created successfully.')
+
+@router.post('/lessons/direct', response={200: StandardResponse}, auth=AuthBearer())
+def create_lesson_direct(request, payload: LessonCreateDirectIn):
+    user = request.auth
+    section = get_object_or_404(Section, id=payload.section_id)
+    lesson = Lesson.objects.create(
+        section=section,
+        title=payload.title,
+        video_url=payload.video_url,
+        duration_str=payload.duration_str,
+        order=payload.order,
+        is_preview=payload.is_preview,
+        upload_status='ready'
+    )
+    return success_response(data={'id': str(lesson.id), 'title': lesson.title}, message='Lesson created successfully.')
+
+@router.put('/{course_id}/pricing', response={200: StandardResponse}, auth=AuthBearer())
+def update_course_pricing(request, course_id: str, payload: CoursePricingUpdateIn):
+    user = request.auth
+    course = get_object_or_404(Course, id=course_id)
+    course.price = payload.price
+    course.original_price = payload.original_price
+    if payload.discount is not None:
+        course.discount = payload.discount
+    course.save()
+    return success_response(data={'id': str(course.id), 'price': course.price}, message='Course pricing updated successfully.')
+
+# ---------------------------------------------------------------------------
 # GET /courses/home
 # ---------------------------------------------------------------------------
 
@@ -146,9 +219,10 @@ def get_home_data(request):
     user = request.auth
 
     # Categories
-    categories = ['All'] + list(
-        Category.objects.order_by('order').values_list('name', flat=True)
-    )
+    categories = [{'id': '', 'name': 'All'}] + [
+        {'id': str(c.id), 'name': c.name, 'order': c.order}
+        for c in Category.objects.order_by('order')
+    ]
 
     # Banners
     banners = []
@@ -249,9 +323,10 @@ def get_explore(
         elif filter_lower == 'paid':
             qs = qs.filter(price__gt=0)
 
-    categories = ['All'] + list(
-        Category.objects.order_by('order').values_list('name', flat=True)
-    )
+    categories = [{'id': '', 'name': 'All'}] + [
+        {'id': str(c.id), 'name': c.name, 'order': c.order}
+        for c in Category.objects.order_by('order')
+    ]
 
     data = {
         'courses': [_course_to_card(c) for c in qs],

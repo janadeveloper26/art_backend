@@ -25,7 +25,7 @@ ALLOWED_HOSTS = [
 
 # Application definition
 
-DJANGO_APPS = [
+INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -33,6 +33,7 @@ DJANGO_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Third-party
+    
     'corsheaders',
     'ninja',
     'rest_framework',
