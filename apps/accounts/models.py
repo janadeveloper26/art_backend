@@ -24,6 +24,12 @@ class User(AbstractUser):
         blank=True,
     )
 
+    avatar = models.URLField(
+        max_length=500,
+        blank=True,
+        default='',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     updated_at = models.DateTimeField(auto_now=True)

@@ -14,6 +14,8 @@ class DeviceSchema(Schema):
 class FirebaseAuthSchema(Schema):
     firebase_token: str
     name: str | None = None
+    email: str | None = None
+    avatar: str | None = None
     device: DeviceSchema | None = None
 
 class AdminLoginSchema(Schema):
@@ -31,9 +33,35 @@ class UserOutSchema(Schema):
     is_approved: bool
 
 class OtpRequestSchema(Schema):
-    phone: str
+    phone_number: str
+    phone: str | None = None  # backward-compat alias
 
 class OtpVerifySchema(Schema):
     id_token: str
     name: str | None = None
+    email: str | None = None
+    avatar: str | None = None
     device: DeviceSchema | None = None
+
+class UserStatsSchema(Schema):
+    total_courses: int
+    watch_time_hours: float
+    completion_rate: int
+
+class ProfileSchema(Schema):
+    id: str
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    avatar: str | None = None
+    role: str
+    is_verified: bool
+    stats: UserStatsSchema | None = None
+
+class ProfileUpdateSchema(Schema):
+    name: str | None = None
+    email: str | None = None
+
+
+class TokenRefreshIn(Schema):
+    refresh_token: str
