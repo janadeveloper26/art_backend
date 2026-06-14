@@ -12,7 +12,7 @@ from apps.accounts.api.auth_api import router as auth_router
 from apps.accounts.api.users_api import router as users_router
 from apps.accounts.api.profile_api import router as profile_router
 from apps.courses.api import router as courses_router, video_router
-from apps.supply.api import router as supply_router
+# from apps.supply.api import router as supply_router
 from apps.payments.api import router as payments_router
 from core.permissions import AuthBearer
 from core.responses import success_response, StandardResponse, error_response
@@ -111,7 +111,7 @@ api.add_router('/users/',   users_router)
 api.add_router('/profile/', profile_router)
 api.add_router('/courses/', courses_router)
 api.add_router('/videos/',  video_router)
-api.add_router('/supply/',  supply_router)
+# api.add_router('/supply/',  supply_router)
 api.add_router('/payments/', payments_router)
 api.add_router('/home/',     home_router)
 

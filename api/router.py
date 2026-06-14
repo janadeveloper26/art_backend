@@ -3,13 +3,13 @@ from api.v1.auth import router as auth_router
 from api.v1.users import router as users_router
 from api.v1.health import router as health_router
 # pyrefly: ignore [missing-import]
-from accounts.api import router as accounts_router
+from apps.accounts.api import router as accounts_router
 # pyrefly: ignore [missing-import]
-from devices.api import router as devices_router
+from apps.devices.api import router as devices_router
 # pyrefly: ignore [missing-import]
-from courses.api import router as courses_router
+from apps.courses.api import router as courses_router
 # pyrefly: ignore [missing-import]
-from payments.api import router as payments_router
+from apps.payments.api import router as payments_router
 from core.exceptions import APIError
 import logging
 
