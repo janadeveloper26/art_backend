@@ -140,6 +140,7 @@ REST_FRAMEWORK = {
 
 # Firebase
 FIREBASE_PROJECT_ID = env('FIREBASE_PROJECT_ID', default='')
+FIREBASE_PRIVATE_KEY_ID = env('FIREBASE_PRIVATE_KEY_ID', default='')
 FIREBASE_PRIVATE_KEY = env('FIREBASE_PRIVATE_KEY', default='').replace('\\n', '\n')
 FIREBASE_CLIENT_EMAIL = env('FIREBASE_CLIENT_EMAIL', default='')
 FIREBASE_SERVICE_ACCOUNT_PATH = env('FIREBASE_SERVICE_ACCOUNT_PATH', default='')
@@ -156,4 +157,39 @@ AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default='mock_access_key')
 AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default='mock_secret_key')
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', default='mock-bucket')
 AWS_S3_REGION = env('AWS_S3_REGION', default='us-east-1')
+
+# Console logging to output error tracebacks in production/Gunicorn logs
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'ERROR',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'apps': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
+
 

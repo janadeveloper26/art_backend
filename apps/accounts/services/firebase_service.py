@@ -38,6 +38,7 @@ def initialize_firebase():
         project_id = settings.FIREBASE_PROJECT_ID
         private_key = settings.FIREBASE_PRIVATE_KEY
         client_email = settings.FIREBASE_CLIENT_EMAIL
+        private_key_id = getattr(settings, 'FIREBASE_PRIVATE_KEY_ID', '')
 
         if not all([project_id, private_key, client_email]):
             raise ValueError(
@@ -48,9 +49,13 @@ def initialize_firebase():
         cred = credentials.Certificate({
             "type": "service_account",
             "project_id": project_id,
+            "private_key_id": private_key_id,
             "private_key": private_key,
             "client_email": client_email,
             "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "client_x509_cert_url": f"https://www.googleapis.com/robot/v1/metadata/x509/{client_email.replace('@', '%40')}",
         })
 
         _firebase_app = firebase_admin.initialize_app(cred)
