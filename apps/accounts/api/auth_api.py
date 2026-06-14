@@ -36,6 +36,33 @@ def admin_login(request, payload: AdminLoginSchema):
     }
 
 
+@router.get('/device/approval-status')
+def check_device_approval(request):
+    """
+    Check if the device/user is approved.
+    Since the mobile app calls this endpoint to poll approval status,
+    we inspect the Authorization header if present.
+    """
+    from rest_framework_simplejwt.authentication import JWTAuthentication
+    from apps.accounts.models import DeviceSession
+    
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        try:
+            jwt_auth = JWTAuthentication()
+            validated_token = jwt_auth.get_validated_token(token)
+            user = jwt_auth.get_user(validated_token)
+            
+            # If the user is approved, check if there's any approved device session
+            is_approved = user.is_approved and DeviceSession.objects.filter(user=user, is_approved=True).exists()
+            return {"success": True, "data": {"is_approved": is_approved}}
+        except Exception:
+            pass
+            
+    return {"success": True, "data": {"is_approved": False}}
+
+
 @router.post('/firebase/login')
 def firebase_auth(request, payload: FirebaseAuthSchema):
     """
