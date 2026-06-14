@@ -4,6 +4,8 @@ DEBUG = False
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=['api.gloriousartcreations.com', '3.110.120.103'])
 
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=['https://api.gloriousartcreations.com'])
+
 # Allow Ninja docs in production
 
 
