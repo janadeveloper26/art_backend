@@ -1,6 +1,13 @@
 import uuid
 from django.db import models
+from storages.backends.s3boto3 import S3Boto3Storage
 from apps.accounts.models import User
+
+
+class VideoStorage(S3Boto3Storage):
+    location = 'videos'
+    file_overwrite = False
+    default_acl = 'private'
 
 
 class Category(models.Model):
@@ -108,6 +115,38 @@ class Section(models.Model):
         return f'{self.course.title} — {self.title}'
 
 
+class Video(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    file = models.FileField(storage=VideoStorage(), upload_to='lessons/', null=True, blank=True)
+    s3_key = models.CharField(max_length=500, unique=True)
+    file_size = models.BigIntegerField(null=True, blank=True)
+    duration_seconds = models.PositiveIntegerField(null=True, blank=True)
+    duration_str = models.CharField(max_length=50, default='00:00')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'videos'
+        ordering = ['-uploaded_at']
+
+    def cloudfront_url(self) -> str:
+        from django.conf import settings
+        key = None
+        if self.file:
+            key = self.file.name
+        if not key:
+            key = self.s3_key
+        if settings.CLOUDFRONT_DOMAIN:
+            return f'https://{settings.CLOUDFRONT_DOMAIN}/{key}'
+        return (
+            f'https://{settings.AWS_STORAGE_BUCKET_NAME}'
+            f'.s3.{settings.AWS_S3_REGION}.amazonaws.com/{key}'
+        )
+
+    def __str__(self):
+        return self.title
+
+
 class Lesson(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     section = models.ForeignKey(
@@ -117,6 +156,9 @@ class Lesson(models.Model):
     video_url = models.URLField(max_length=500)
     s3_key = models.CharField(max_length=500, null=True, blank=True)
     file_size = models.BigIntegerField(null=True, blank=True)
+    video = models.ForeignKey(
+        Video, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons'
+    )
     order = models.PositiveIntegerField()
     duration_str = models.CharField(max_length=50, default='00:00')
     is_preview = models.BooleanField(default=False)
@@ -129,6 +171,12 @@ class Lesson(models.Model):
     class Meta:
         db_table = 'lessons'
         ordering = ['order']
+
+    def cloudfront_url(self) -> str:
+        from django.conf import settings
+        if settings.CLOUDFRONT_DOMAIN and self.s3_key:
+            return f'https://{settings.CLOUDFRONT_DOMAIN}/{self.s3_key}'
+        return self.video_url
 
     def __str__(self):
         return self.title

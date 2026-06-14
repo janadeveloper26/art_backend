@@ -29,15 +29,6 @@ class ReviewSchema(Schema):
     comment: str
     date: str
 
-class CategorySchema(Schema):
-    id: str
-    name: str
-    order: Optional[int] = 0
-
-class CategoryCreateIn(Schema):
-    name: str
-    order: int = 0
-
 
 # ---------------------------------------------------------------------------
 # Course summary (used in home, explore, my-courses)
@@ -64,7 +55,7 @@ class CourseCardSchema(Schema):
 # ---------------------------------------------------------------------------
 
 class HomeDataSchema(Schema):
-    categories: List[CategorySchema]
+    categories: List[str]
     banners: List[BannerSchema]
     continue_learning: List[CourseCardSchema]
     featured_courses: List[CourseCardSchema]
@@ -77,7 +68,7 @@ class HomeDataSchema(Schema):
 
 class ExploreResponseSchema(Schema):
     courses: List[CourseCardSchema]
-    categories: List[CategorySchema]
+    categories: List[str]
     filters: List[str]
 
 
@@ -141,23 +132,12 @@ class PresignedURLOut(Schema):
     upload_url: str
     s3_key: str
 
-class SignedUrlIn(Schema):
-    file_name: str
-
 
 class LessonCreateIn(Schema):
     section_id: UUID
     title: str
     s3_key: str
     file_size: Optional[int] = None
-    duration_str: str = '00:00'
-    order: int = 0
-    is_preview: bool = False
-
-class LessonCreateDirectIn(Schema):
-    section_id: UUID
-    title: str
-    video_url: str
     duration_str: str = '00:00'
     order: int = 0
     is_preview: bool = False
@@ -173,25 +153,14 @@ class LessonOut(Schema):
     is_completed: bool
     upload_status: str
 
-# ---------------------------------------------------------------------------
-# Admin / Creation schemas
-# ---------------------------------------------------------------------------
 
 class CourseCreateIn(Schema):
     title: str
-    description: str
-    category_id: UUID
-    instructor_role: str = 'Instructor'
-    price: float = 0.00
+    description: str = ''
+    category_id: str | None = None
+    price: str = '0.00'
+    original_price: str | None = None
     level: str = 'BEGINNER'
-    duration_str: str = '0H 0M'
-
-class CoursePricingUpdateIn(Schema):
-    price: float
-    original_price: float = 0.00
-    discount: Optional[str] = None
-
-class SectionCreateIn(Schema):
-    title: str
-    order: int
-
+    instructor_role: str = 'Instructor'
+    is_published: bool = False
+    is_featured: bool = False

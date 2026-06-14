@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Category, Banner, Course, Section, Lesson, UserProgress, Enrollment, Review
+from django.utils.html import format_html
+from .models import Category, Banner, Course, Section, Lesson, UserProgress, Enrollment, Review, Video
 
 
 @admin.register(Category)
@@ -35,6 +36,7 @@ class CourseAdmin(admin.ModelAdmin):
 class LessonInline(admin.TabularInline):
     model = Lesson
     extra = 0
+    fields = ('title', 'video', 'order', 'duration_str', 'is_preview', 'upload_status')
 
 
 @admin.register(Section)
@@ -46,9 +48,34 @@ class SectionAdmin(admin.ModelAdmin):
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ('title', 'section', 'order', 'duration_str', 'is_preview', 'upload_status')
+    list_display = ('title', 'section', 'order', 'duration_str', 'is_preview', 'upload_status', 'video_link')
     list_filter = ('section__course', 'is_preview', 'upload_status')
     search_fields = ('title',)
+    raw_id_fields = ('video',)
+
+    def video_link(self, obj):
+        url = obj.cloudfront_url()
+        if url:
+            return format_html('<a href="{}" target="_blank">Play</a>', url)
+        return '-'
+    video_link.short_description = 'Video'
+
+
+@admin.register(Video)
+class VideoAdmin(admin.ModelAdmin):
+    list_display = ('title', 'file', 'duration_str', 'uploaded_at', 'video_preview')
+    search_fields = ('title',)
+    readonly_fields = ('uploaded_at',)
+
+    def video_preview(self, obj):
+        url = obj.cloudfront_url()
+        if url:
+            return format_html(
+                '<video width="320" height="180" controls><source src="{}" type="video/mp4"></video>',
+                url,
+            )
+        return '-'
+    video_preview.short_description = 'Preview'
 
 
 @admin.register(UserProgress)
