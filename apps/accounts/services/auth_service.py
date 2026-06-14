@@ -56,11 +56,12 @@ class AuthService:
                 device.save(update_fields=['fcm_token', 'updated_at'])
 
         # ------------------------------------------------------------------ #
-        # Approval gates                                                       #
+        # Approval gates — return pending status so API layer can 422         #
         # ------------------------------------------------------------------ #
         if not user.is_approved:
             return {
                 'success': False,
+                'pending': True,
                 'status': 'pending_user_approval',
                 'message': 'Your account is pending admin approval.',
             }
@@ -69,6 +70,7 @@ class AuthService:
         if device and not device.is_approved:
             return {
                 'success': False,
+                'pending': True,
                 'status': 'pending_device_approval',
                 'message': 'This device is pending admin approval.',
             }
@@ -80,6 +82,9 @@ class AuthService:
 
         return {
             'success': True,
+            'pending': False,
+            'status': 'success',
+            'message': 'Login successful',
             'data': {
                 'access_token': str(refresh.access_token),
                 'refresh_token': str(refresh),
@@ -90,8 +95,8 @@ class AuthService:
                     'name': user.get_full_name() or user.username,
                     'email': user.email,
                     'phone': user.phone_number,
-                    'avatar': None,
-                    'role': 'user',
+                    'avatar': user.avatar or None,
+                    'role': 'admin' if user.is_staff else 'student',
                     'is_verified': user.is_approved,
                 }
             }
