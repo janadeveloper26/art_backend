@@ -1,4 +1,7 @@
+import logging
+
 from django.conf import settings
+from django.db import DatabaseError
 from ninja import Router
 
 from .schemas import CreateOrderSchema
@@ -8,7 +11,9 @@ from core.exceptions import APIError
 from core.idempotency import idempotent
 from .models import SubscriptionPlan, Order
 
-router = Router()
+logger = logging.getLogger('art_backend')
+
+router = Router(tags=['Payments'])
 
 
 def _parse_color(hex_str: str, fallback: int = 0xFF6A1B9A) -> int:
@@ -63,17 +68,27 @@ def get_subscription_plans(request):
 @idempotent(timeout=60)
 def create_order(request, data: CreateOrderSchema):
     """Create a payment order for a subscription plan."""
+    if not data.plan_id or not data.plan_id.strip():
+        raise APIError(400, 'plan_id is required.')
+
     try:
         plan = SubscriptionPlan.objects.get(id=data.plan_id)
     except SubscriptionPlan.DoesNotExist:
         raise APIError(400, 'Invalid plan ID.')
 
-    order = Order.objects.create(
-        user=request.auth,
-        plan=plan,
-        amount=plan.price,
-        status='PENDING',
-    )
+    if not plan.is_active:
+        raise APIError(400, 'This plan is no longer available.')
+
+    try:
+        order = Order.objects.create(
+            user=request.auth,
+            plan=plan,
+            amount=plan.price,
+            status='PENDING',
+        )
+    except DatabaseError as e:
+        logger.error('Order creation failed: %s', e)
+        raise APIError(500, 'Failed to create order. Please try again.')
 
     order_data = {
         'order_id': f'order_{order.id.hex[:12]}',
