@@ -12,24 +12,7 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-me')
 
 DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = [
-    "art-backend-z691.onrender.com",
-    "localhost",
-    "127.0.0.1",
-    "192.168.29.72",  # Added to allow local network connections
-    "0.0.0.0",
-    "3.110.120.103",
-    "api.gloriousartcreations.com"
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "https://api.gloriousartcreations.com",
-]
-
-
-# Application definition
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -39,11 +22,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Third-party
-    
     'corsheaders',
     'ninja',
     'rest_framework',
     'rest_framework_simplejwt',
+    'storages',
     # Local
     'apps.accounts',
     'apps.courses',
@@ -51,6 +34,7 @@ INSTALLED_APPS = [
     'apps.payments',
     # 'apps.analytics',
     'apps.audit',
+    'apps.supply',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +46,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.ApiLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -146,7 +131,6 @@ REST_FRAMEWORK = {
 
 # Firebase
 FIREBASE_PROJECT_ID = env('FIREBASE_PROJECT_ID', default='')
-FIREBASE_PRIVATE_KEY_ID = env('FIREBASE_PRIVATE_KEY_ID', default='')
 FIREBASE_PRIVATE_KEY = env('FIREBASE_PRIVATE_KEY', default='').replace('\\n', '\n')
 FIREBASE_CLIENT_EMAIL = env('FIREBASE_CLIENT_EMAIL', default='')
 FIREBASE_SERVICE_ACCOUNT_PATH = env('FIREBASE_SERVICE_ACCOUNT_PATH', default='')
@@ -158,44 +142,21 @@ CACHES = {
     }
 }
 
-# Dummy AWS settings for testing S3 presigned URLs locally
+# AWS S3 — presigned URLs for video upload
 AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default='mock_access_key')
 AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default='mock_secret_key')
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', default='mock-bucket')
-AWS_S3_REGION = env('AWS_S3_REGION', default='us-east-1')
+AWS_S3_REGION = env('AWS_S3_REGION', default=env('AWS_S3_REGION_NAME', default='us-east-1'))
+AWS_S3_REGION_NAME = AWS_S3_REGION
 
-# Console logging to output error tracebacks in production/Gunicorn logs
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'ERROR',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'ERROR',
-            'propagate': False,
-        },
-        'apps': {
-            'handlers': ['console'],
-            'level': 'ERROR',
-            'propagate': False,
-        },
-    },
-}
-
+# CloudFront — video streaming distribution (optional)
+CLOUDFRONT_DOMAIN = env('CLOUDFRONT_DOMAIN', default=env('AWS_S3_CUSTOM_DOMAIN', default=None))
+CLOUDFRONT_KEY_ID = env('CLOUDFRONT_KEY_ID', default=None)
+_raw_cf_private = env('CLOUDFRONT_PRIVATE_KEY', default=None)
+if _raw_cf_private and '-----' not in _raw_cf_private:
+    _p = Path(_raw_cf_private)
+    if not _p.is_absolute():
+        _raw_cf_private = str(BASE_DIR / _p)
+CLOUDFRONT_PRIVATE_KEY = _raw_cf_private
+AWS_S3_CUSTOM_DOMAIN = CLOUDFRONT_DOMAIN
 
