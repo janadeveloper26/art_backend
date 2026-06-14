@@ -141,6 +141,9 @@ class PresignedURLOut(Schema):
     upload_url: str
     s3_key: str
 
+class SignedUrlIn(Schema):
+    file_name: str
+
 
 class LessonCreateIn(Schema):
     section_id: UUID

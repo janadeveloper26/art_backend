@@ -22,6 +22,7 @@ from .schemas import (
     CoursePricingUpdateIn,
     SectionCreateIn,
     LessonCreateDirectIn,
+    SignedUrlIn,
 )
 
 import uuid
@@ -107,6 +108,21 @@ def get_presigned_url(request, filename: str, content_type: str):
         ExpiresIn=3600,
     )
     return success_response(data={'upload_url': url, 's3_key': s3_key})
+
+video_router = Router()
+
+@video_router.post('/signed-url', auth=AuthBearer())
+def get_read_signed_url(request, payload: SignedUrlIn):
+    s3_key = f'lessons/videos/{payload.file_name}'
+    url = _s3_client().generate_presigned_url(
+        'get_object',
+        Params={
+            'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+            'Key': s3_key,
+        },
+        ExpiresIn=3600,
+    )
+    return {'url': url}
 
 
 @router.post('/lessons', response={200: StandardResponse}, auth=AuthBearer())
