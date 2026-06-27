@@ -41,3 +41,6 @@ localhost_key.pem
 temp_check_db.py
 scripts/run_https_dev.py
 scripts/test_auth.py
+
+
+*.md

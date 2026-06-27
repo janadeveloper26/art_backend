@@ -18,6 +18,8 @@ class User(AbstractUser):
     )
 
     is_approved = models.BooleanField(default=False)
+    
+    is_premium = models.BooleanField(default=False)
 
     approved_at = models.DateTimeField(
         null=True,

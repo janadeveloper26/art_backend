@@ -1,6 +1,6 @@
 from unittest.mock import patch, MagicMock
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 
 from .schemas import FirebaseAuthSchema
@@ -20,6 +20,7 @@ def _fake_decoded(**overrides):
     return payload
 
 
+@override_settings(RATELIMIT_ENABLE=False)
 class FirebaseProfileDataTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(

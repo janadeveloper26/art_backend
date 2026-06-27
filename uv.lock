@@ -57,6 +57,7 @@ dependencies = [
     { name = "django-prometheus" },
     { name = "django-ratelimit" },
     { name = "django-redis" },
+    { name = "django-storages" },
     { name = "django-structlog" },
     { name = "djangorestframework" },
     { name = "djangorestframework-simplejwt" },
@@ -69,6 +70,7 @@ dependencies = [
     { name = "pyjwt" },
     { name = "pyopenssl" },
     { name = "python-dotenv" },
+    { name = "razorpay" },
     { name = "redis" },
     { name = "requests" },
     { name = "structlog" },
@@ -90,6 +92,7 @@ requires-dist = [
     { name = "django-prometheus", specifier = ">=2.3.1" },
     { name = "django-ratelimit", specifier = ">=4.1.0" },
     { name = "django-redis", specifier = ">=5.4.0" },
+    { name = "django-storages", specifier = ">=1.14.6" },
     { name = "django-structlog", specifier = ">=8.1.0" },
     { name = "djangorestframework", specifier = ">=3.17.1" },
     { name = "djangorestframework-simplejwt", specifier = ">=5.3.1" },
@@ -102,6 +105,7 @@ requires-dist = [
     { name = "pyjwt", specifier = ">=2.12.1" },
     { name = "pyopenssl", specifier = ">=24.0.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "razorpay", specifier = ">=2.0.1" },
     { name = "redis", specifier = ">=5.0.4" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "structlog", specifier = ">=24.4.0" },
@@ -574,6 +578,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/08/53/dbcfa1e528e0d6c39947092625b2c89274b5d88f14d357cee53c4d6dbbd4/django_redis-6.0.0.tar.gz", hash = "sha256:2d9cb12a20424a4c4dde082c6122f486628bae2d9c2bee4c0126a4de7fda00dd", size = 56904, upload-time = "2025-06-17T18:15:46.376Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7e/79/055dfcc508cfe9f439d9f453741188d633efa9eab90fc78a67b0ab50b137/django_redis-6.0.0-py3-none-any.whl", hash = "sha256:20bf0063a8abee567eb5f77f375143c32810c8700c0674ced34737f8de4e36c0", size = 33687, upload-time = "2025-06-17T18:15:34.165Z" },
+]
+
+[[package]]
+name = "django-storages"
+version = "1.14.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ff/d6/2e50e378fff0408d558f36c4acffc090f9a641fd6e084af9e54d45307efa/django_storages-1.14.6.tar.gz", hash = "sha256:7a25ce8f4214f69ac9c7ce87e2603887f7ae99326c316bc8d2d75375e09341c9", size = 87587, upload-time = "2025-04-02T02:34:55.103Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1f/21/3cedee63417bc5553eed0c204be478071c9ab208e5e259e97287590194f1/django_storages-1.14.6-py3-none-any.whl", hash = "sha256:11b7b6200e1cb5ffcd9962bd3673a39c7d6a6109e8096f0e03d46fab3d3aabd9", size = 33095, upload-time = "2025-04-02T02:34:53.291Z" },
 ]
 
 [[package]]
@@ -1414,6 +1430,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9e/60/da4426c3e9aee56f08b24091a9e85a0414260f928f97afd0013dfbd0332f/python_ipware-3.0.0.tar.gz", hash = "sha256:9117b1c4dddcb5d5ca49e6a9617de2fc66aec2ef35394563ac4eecabdf58c062", size = 16609, upload-time = "2024-04-19T20:00:58.938Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/08/bd/ccd7416fdb30f104ddf6cfd8ee9f699441c7d9880a26f9b3089438adee05/python_ipware-3.0.0-py3-none-any.whl", hash = "sha256:fc936e6e7ec9fcc107f9315df40658f468ac72f739482a707181742882e36b60", size = 10761, upload-time = "2024-04-19T20:00:57.171Z" },
+]
+
+[[package]]
+name = "razorpay"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d1/e4/877eb8ba68bb5212021b25a4f97b6c3f693e08bb6b319fc97c966c4391a3/razorpay-2.0.1.tar.gz", hash = "sha256:a766b9019e496c995906f75c31900bff8b2709bea251f1771925d742cba53e5b", size = 197169, upload-time = "2026-03-09T12:59:03.445Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7f/35/e8fbf239cb16595007839408f7645bc952d8490f5dd50f9049434f296ce8/razorpay-2.0.1-py3-none-any.whl", hash = "sha256:e6a60c78203a3e1d3fc428e6fadf15bc67f75bd67217eaf9dc9925c87e98bc7a", size = 176920, upload-time = "2026-03-09T12:59:01.99Z" },
 ]
 
 [[package]]

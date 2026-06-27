@@ -26,7 +26,10 @@ class SubscriptionPlansResponseSchema(Schema):
     testimonial: TestimonialSchema
     plans: List[PlanSchema]
 
-class CreateOrderSchema(Schema):
+class CreateCourseOrderSchema(Schema):
+    course_id: str
+
+class CreateSubscriptionSchema(Schema):
     plan_id: str
 
 class OrderResponseSchema(Schema):
@@ -35,3 +38,18 @@ class OrderResponseSchema(Schema):
     currency: str = "INR"
     status: str
     gateway_key: Optional[str] = None
+
+class SubscriptionResponseSchema(Schema):
+    subscription_id: str
+    status: str
+    gateway_key: Optional[str] = None
+
+class VerifyCoursePaymentSchema(Schema):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+class VerifySubscriptionPaymentSchema(Schema):
+    razorpay_subscription_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str

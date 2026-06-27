@@ -7,6 +7,7 @@ from django.http import HttpRequest
 from django.urls import path
 from ninja import NinjaAPI, Router
 from ninja.errors import ValidationError
+from django_ratelimit.exceptions import Ratelimited
 
 from apps.accounts.api.auth_api import router as auth_router
 from apps.accounts.api.users_api import router as users_router
@@ -41,6 +42,17 @@ def validation_handler(request: HttpRequest, exc: ValidationError):
         request,
         error_response('VALIDATION_ERROR', str(errors)),
         status=422,
+    )
+
+
+@api.exception_handler(Ratelimited)
+def ratelimited_handler(request: HttpRequest, exc: Ratelimited):
+    """Handle rate limit exceptions."""
+    logger.warning(f'Rate limit exceeded for IP: {request.META.get("REMOTE_ADDR")}')
+    return api.create_response(
+        request,
+        error_response('TOO_MANY_REQUESTS', 'You have made too many requests. Please try again later.'),
+        status=429,
     )
 
 
