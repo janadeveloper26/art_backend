@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from django.contrib.auth import get_user_model
+from django_ratelimit.decorators import ratelimit
 
 from ninja import Router
 from ninja.errors import HttpError
@@ -44,6 +45,7 @@ def device_approval_status(request):
 # ---------------------------------------------------------------------------
 
 @router.post('/admin-login')
+@ratelimit(key='ip', rate='10/m', block=True)
 def admin_login(request, payload: AdminLoginSchema):
     username = payload.username
     if '@' in username:
@@ -107,6 +109,7 @@ def token_verify(request, payload: TokenRefreshIn):
 # ---------------------------------------------------------------------------
 
 @router.post('/firebase/login')
+@ratelimit(key='ip', rate='10/m', block=True)
 def firebase_auth(request, payload: FirebaseAuthSchema):
     """
     Authenticate with a Firebase ID token (Google Sign-In).
@@ -156,6 +159,7 @@ def firebase_auth(request, payload: FirebaseAuthSchema):
 # ---------------------------------------------------------------------------
 
 @router.post('/send-otp')
+@ratelimit(key='ip', rate='5/m', block=True)
 def otp_request(request, payload: OtpRequestSchema):
     phone = payload.phone_number or payload.phone
     is_existing = User.objects.filter(phone_number=phone).exists() if phone else False
@@ -170,6 +174,7 @@ def otp_request(request, payload: OtpRequestSchema):
 # ---------------------------------------------------------------------------
 
 @router.post('/otp/verify')
+@ratelimit(key='ip', rate='5/m', block=True)
 def otp_verify(request, payload: OtpVerifySchema):
     """
     Verify Firebase ID token from phone OTP and authenticate.

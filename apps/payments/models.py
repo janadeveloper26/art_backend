@@ -1,5 +1,7 @@
 import uuid
 from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from apps.accounts.models import User
 from apps.courses.models import Course
 
@@ -35,17 +37,44 @@ class PlanFeature(models.Model):
         db_table = 'plan_features'
         ordering = ['order']
 
-class Order(models.Model):
+class CourseOrder(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True)
-    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='course_orders')
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
-    gateway_order_id = models.CharField(max_length=255, null=True, blank=True)
-    gateway_payment_id = models.CharField(max_length=255, null=True, blank=True)
+    gateway_order_id = models.CharField(max_length=255, null=True, blank=True, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'orders'
+        db_table = 'course_orders'
 
+class SubscriptionOrder(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subscription_orders')
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    gateway_subscription_id = models.CharField(max_length=255, null=True, blank=True, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'subscription_orders'
+
+class PaymentTransaction(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions')
+    gateway_payment_id = models.CharField(max_length=255, unique=True)
+    gateway_signature = models.TextField(null=True, blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.SUCCESS)
+    
+    # Generic relation to link to either CourseOrder or SubscriptionOrder
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.UUIDField()
+    order = GenericForeignKey('content_type', 'object_id')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'payment_transactions'

@@ -1,5 +1,9 @@
 from .base import *
 
+if SECRET_KEY == 'django-insecure-change-me':
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured("SECRET_KEY must be set in production.")
+
 DEBUG = False
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=['*'])
