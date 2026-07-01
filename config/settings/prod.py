@@ -45,3 +45,6 @@ LOGGING = {
         },
     },
 }
+
+# Fix for django-ratelimit behind a reverse proxy (like Nginx)
+RATELIMIT_IP_META_KEY = 'HTTP_X_FORWARDED_FOR'
