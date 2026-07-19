@@ -131,7 +131,7 @@ def firebase_auth(request, payload: FirebaseAuthSchema):
         raise HttpError(422, result['message'])
 
     if result.get('success'):
-        firebase_uid = decoded.get('uid')
+        firebase_uid = decoded.get('uid') or decoded.get('user_id') or decoded.get('sub')
         user = User.objects.filter(firebase_uid=firebase_uid).first()
         if user:
             update_fields = []
@@ -196,7 +196,7 @@ def otp_verify(request, payload: OtpVerifySchema):
         raise HttpError(422, result['message'])
 
     if result.get('success'):
-        firebase_uid = decoded.get('uid')
+        firebase_uid = decoded.get('uid') or decoded.get('user_id') or decoded.get('sub')
         user = User.objects.filter(firebase_uid=firebase_uid).first()
         if user:
             update_fields = []

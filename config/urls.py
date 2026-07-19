@@ -13,7 +13,7 @@ from apps.accounts.api.auth_api import router as auth_router
 from apps.accounts.api.users_api import router as users_router
 from apps.accounts.api.profile_api import router as profile_router
 from apps.courses.api import router as courses_router, video_router
-# from apps.supply.api import router as supply_router
+from apps.supply.api import router as supply_router
 from apps.payments.api import router as payments_router
 from core.permissions import AuthBearer
 from core.responses import success_response, StandardResponse, error_response
@@ -78,6 +78,17 @@ def django_validation_handler(request: HttpRequest, exc: DjangoValidationError):
     )
 
 
+from django.http import Http404
+
+@api.exception_handler(Http404)
+def http_404_handler(request: HttpRequest, exc: Http404):
+    """Return 404 JSON response instead of 500."""
+    return api.create_response(
+        request,
+        error_response('NOT_FOUND', 'The requested resource was not found.'),
+        status=404,
+    )
+
 @api.exception_handler(Exception)
 def global_500_handler(request: HttpRequest, exc: Exception):
     """Last-resort catch-all for unexpected errors (500)."""
@@ -123,7 +134,7 @@ api.add_router('/users/',   users_router)
 api.add_router('/profile/', profile_router)
 api.add_router('/courses/', courses_router)
 api.add_router('/videos/',  video_router)
-# api.add_router('/supply/',  supply_router)
+api.add_router('/supply/',  supply_router)
 api.add_router('/payments/', payments_router)
 api.add_router('/home/',     home_router)
 

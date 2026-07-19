@@ -10,7 +10,7 @@ User = get_user_model()
 class AuthService:
     @staticmethod
     def authenticate(decoded_token, device_payload):
-        firebase_uid = decoded_token['uid']
+        firebase_uid = decoded_token.get('uid') or decoded_token.get('user_id') or decoded_token.get('sub')
 
         email = decoded_token.get('email', '')
 

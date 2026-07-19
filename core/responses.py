@@ -14,13 +14,13 @@ class StandardResponse(BaseModel):
     error: Optional[ErrorDetail] = None
 
 
-def success_response(data: Any = None, message: str = "Success") -> StandardResponse:
-    return StandardResponse(success=True, message=message, data=data)
+def success_response(data: Any = None, message: str = "Success") -> dict:
+    return StandardResponse(success=True, message=message, data=data).model_dump()
 
 
-def error_response(code: str, message: str) -> StandardResponse:
+def error_response(code: str, message: str) -> dict:
     return StandardResponse(
         success=False,
         message=message,
         error=ErrorDetail(code=code, message=message),
-    )
+    ).model_dump()

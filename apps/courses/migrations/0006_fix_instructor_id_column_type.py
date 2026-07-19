@@ -8,9 +8,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            sql="""
-                -- 1. Drop FK constraint on instructor_id
+        migrations.RunPython(
+            code=lambda apps, schema_editor: schema_editor.connection.cursor().execute("""
                 DO $$ DECLARE
                     _conname text;
                 BEGIN
@@ -23,28 +22,20 @@ class Migration(migrations.Migration):
                         EXECUTE 'ALTER TABLE courses DROP CONSTRAINT ' || _conname;
                     END IF;
                 END $$;
-
-                -- 2. Null out any uuid values that can't cast to bigint
                 UPDATE courses SET instructor_id = NULL
                 WHERE instructor_id IS NOT NULL
                   AND length(trim(instructor_id::text)) > 15;
-
-                -- 3. Drop the index (Django will recreate it)
                 DROP INDEX IF EXISTS courses_instructor_id_801fc5d2;
-
-                -- 4. Alter column type to bigint
                 ALTER TABLE courses ALTER COLUMN instructor_id TYPE bigint
                     USING (nullif(btrim(instructor_id::text), ''))::bigint;
-
-                -- 5. Re-create FK constraint
                 ALTER TABLE courses ADD CONSTRAINT courses_instructor_id_fkey
                     FOREIGN KEY (instructor_id) REFERENCES accounts_user(id)
                     ON DELETE SET NULL;
-            """,
-            reverse_sql="""
+            """) if schema_editor.connection.vendor == 'postgresql' else None,
+            reverse_code=lambda apps, schema_editor: schema_editor.connection.cursor().execute("""
                 ALTER TABLE courses DROP CONSTRAINT IF EXISTS courses_instructor_id_fkey;
                 ALTER TABLE courses ALTER COLUMN instructor_id TYPE uuid
                     USING gen_random_uuid();
-            """,
+            """) if schema_editor.connection.vendor == 'postgresql' else None,
         ),
     ]

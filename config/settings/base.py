@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     'apps.payments',
     # 'apps.analytics',
     'apps.audit',
-    # 'apps.supply',
+    'apps.supply',
 ]
 
 MIDDLEWARE = [
@@ -164,3 +164,5 @@ AWS_S3_CUSTOM_DOMAIN = CLOUDFRONT_DOMAIN
 # Razorpay
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='')
 RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='')
+
+# Trigger reload
